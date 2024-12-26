@@ -9,8 +9,11 @@ import java.util.Properties;
 public class PropertyBuilder {
     public static  Properties property;
     public static Properties setUpProperties(String filePath) throws IOException {
-        property = new Properties();
-        property.load(new FileInputStream(new File(filePath)));
+        if(property == null){
+            property = new Properties();
+            property.load(new FileInputStream(new File(filePath)));
+        }
+
         return property;
     }
 

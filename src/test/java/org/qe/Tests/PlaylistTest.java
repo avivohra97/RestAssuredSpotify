@@ -29,8 +29,8 @@ public class PlaylistTest {
     RequestSpecification requestSpecification;
     ResponseSpecification responseSpecification;
     String access_token;
-    String userId;
-    String playListId;
+//    String userId;
+//    String playListId;
     Response userPlaylist;
     Properties prop;
     String baseUri = "https://api.spotify.com/";
@@ -43,23 +43,27 @@ public class PlaylistTest {
         this.responseSpecification = SpecBuilder.resSpec();
     }
      @Test
-    public void getUserDetails(){
+    public void getUserDetails() throws IOException {
         Response response = given().spec(requestSpecification).
                 get("/me").then().spec(responseSpecification).
                 and().extract().response();
-        userId = response.path("id");
+        String userId = response.path("id");
+        PropertyBuilder.setProperty("userId",userId);
+        PropertyBuilder.updateProperty(filePath);
         System.out.println(userId+" : is the user id");
     }
     @Test(dependsOnMethods = "getUserDetails")
-    public void getUserPlaylists(){
+    public void getUserPlaylists() throws IOException {
         userPlaylist = given().spec(requestSpecification).
-                pathParam("userId",userId).
+                pathParam("userId",prop.getProperty("userId")).
                 get("/users/{userId}/playlists").
                 then().spec(responseSpecification).
                 and().extract().response();
         List<String> playListIds = userPlaylist.path("items.id");
         System.out.println(playListIds.toString()+" : is the playlists id id");
-        playListId = userPlaylist.path("items[0].id");
+        String playListId = userPlaylist.path("items[0].id");
+        PropertyBuilder.setProperty("playListId",playListId);
+        PropertyBuilder.updateProperty(filePath);
         System.out.println(playListId+" : is the playlist id");
 
     }
@@ -73,7 +77,7 @@ public class PlaylistTest {
         reqPlaylist.setPublic(false);
         Item respPlaylist = given().
                 spec(requestSpecification).
-                pathParam("userId",userId).
+                pathParam("userId",prop.getProperty("userId")).
                 body(reqPlaylist).
         post("/users/{userId}/playlists").
         then().
@@ -87,7 +91,7 @@ public class PlaylistTest {
     @Test(dependsOnMethods = {"getUserPlaylists","getUserDetails"})
     public void updatePlaylist(){
 
-        Item existingRecord = userPlaylistRecordSingle(playListId);
+        Item existingRecord = userPlaylistRecordSingle(prop.getProperty("playListId"));
         String existingName = existingRecord.getName();
         String existingId = existingRecord.getId();
         System.out.println("case "+existingRecord.toString());
@@ -98,7 +102,7 @@ public class PlaylistTest {
         reqPlaylist.setDescription("pojo updated desc "+ val);
         reqPlaylist.setPublic(false);
         given().spec(requestSpecification).
-                pathParam("playlistId",playListId).
+                pathParam("playlistId",prop.getProperty("playListId")).
                 body(reqPlaylist).
                 contentType(ContentType.JSON).
                 put("/playlists/{playlistId}").
@@ -106,7 +110,7 @@ public class PlaylistTest {
                 assertThat().
                 statusCode(200);
 
-        Item newRecord = userPlaylistRecordSingle(playListId);
+        Item newRecord = userPlaylistRecordSingle(prop.getProperty("playListId"));
         System.out.println("case "+newRecord.toString());
 
         String newName = newRecord.getName();
@@ -117,9 +121,8 @@ public class PlaylistTest {
 
     public PlaylistPOJO userPlaylistRecord(){
        PlaylistPOJO newResp = given().spec(requestSpecification).
-                pathParam("userId",userId).
+                pathParam("userId",prop.getProperty("userId")).
                 get("/users/{userId}/playlists").
-
                 then().spec(responseSpecification).
                 assertThat().
                 statusCode(200).and().extract().response().as(PlaylistPOJO.class);
