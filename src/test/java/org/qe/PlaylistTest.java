@@ -91,7 +91,6 @@ public class PlaylistTest {
         return Base64.getEncoder().encodeToString(val.getBytes());
     }
 
-
     @Test
     public void getUserDetails(){
         Response response = given().spec(requestSpecification).
