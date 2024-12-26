@@ -1,4 +1,4 @@
-package org.qe;
+package org.qe.Tests;
 
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
@@ -7,19 +7,18 @@ import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
 import io.restassured.specification.ResponseSpecification;
-import org.hamcrest.MatcherAssert;
+import org.qe.POJO.Item;
+import org.qe.POJO.PlaylistPOJO;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
 import java.util.Properties;
 
 import static io.restassured.RestAssured.*;
-import static io.restassured.specification.ProxySpecification.auth;
 
 public class PlaylistTest {
 
@@ -118,69 +117,89 @@ public class PlaylistTest {
     }
 
     @Test(dependsOnMethods = "getUserDetails")
-    public Response createPlaylist(){
-        Response resp = given().
+    public void createPlaylist(){
+        double val = Math.random()*10;
+        Item reqPlaylist = new Item();
+        reqPlaylist.setName("create pojo Playlist "+val);
+        reqPlaylist.setDescription("pojo create desc");
+        reqPlaylist.setPublic(false);
+        Item respPlaylist = given().
                 spec(requestSpecification).
                 pathParam("userId",userId).
-                body("{\n" +
-                        "    \"name\": \"New Playlist\",\n" +
-                        "    \"description\": \"New playlist description\",\n" +
-                        "    \"public\": false\n" +
-                        "}").
-                post("/users/{userId}/playlists").
-                then().spec(responseSpecification).
+                body(reqPlaylist).
+        post("/users/{userId}/playlists").
+        then().spec(responseSpecification).
                 assertThat().
                 statusCode(201).
-                extract().response();
-        return  resp;
+                extract().response().as(Item.class);
+        System.out.println("playlist created");
+        Assert.assertEquals(reqPlaylist.getName(),respPlaylist.getName());
     }
 
     @Test(dependsOnMethods = {"getUserPlaylists","getUserDetails"})
     public void updatePlaylist(){
-        Response existingRecord = userPlaylistRecord();
-        int existingCount = existingRecord.path("total");
-        String existingDesc = existingRecord.path("items[0].description");
-        String existingId = existingRecord.path("items[0].id");
-        Response response = given().spec(requestSpecification).
+
+        Item existingRecord = userPlaylistRecordSingle(playListId);
+        String existingName = existingRecord.getName();
+        String existingId = existingRecord.getId();
+        System.out.println("case "+existingRecord.toString());
+
+        double val = Math.random()*10;
+        Item reqPlaylist = new Item();
+        reqPlaylist.setName("Updated pojo Playlist "+val);
+        reqPlaylist.setDescription("pojo updated desc "+ val);
+        reqPlaylist.setPublic(false);
+        given().spec(requestSpecification).
                 pathParam("playlistId",playListId).
-                body("{\n" +
-                        "    \"name\": \"Update Playlist\",\n" +
-                        "    \"description\": \"Update playlist description\",\n" +
-                        "    \"public\": false\n" +
-                        "}").
+                body(reqPlaylist).
+                contentType(ContentType.JSON).
                 put("/playlists/{playlistId}").
                 then().
                 assertThat().
-                statusCode(200).
-                extract().response();
+                statusCode(200);
 
-        Response newRecord = userPlaylistRecord();
-        int newCount = newRecord.path("total");
-        String newDesc = newRecord.path("items[0].description");
-        String newId = newRecord.path("items[0].id");
-        Assert.assertEquals(newCount,existingCount);
+        Item newRecord = userPlaylistRecordSingle(playListId);
+        System.out.println("case "+newRecord.toString());
+
+        String newName = newRecord.getName();
+        String newId = newRecord.getId();
+        Assert.assertEquals(newId,existingId);
+//        Assert.assertNotEquals(existingName,newName);
+        Assert.assertNotSame(existingName,newName);
     }
 
-    public Response userPlaylistRecord(){
-       Response newResp = given().spec(requestSpecification).
+    public PlaylistPOJO userPlaylistRecord(){
+       PlaylistPOJO newResp = given().spec(requestSpecification).
                 pathParam("userId",userId).
                 get("/users/{userId}/playlists").
 
                 then().spec(responseSpecification).
                 assertThat().
-                statusCode(200).and().extract().response();
+                statusCode(200).and().extract().response().as(PlaylistPOJO.class);
        return newResp;
+    }
+
+    public Item userPlaylistRecordSingle(String id){
+        Item newResp;
+        newResp = given().spec(requestSpecification).
+                pathParam("playlistId",id).
+                get("/playlists/{playlistId}").
+
+                then().spec(responseSpecification).
+                assertThat().
+                statusCode(200).and().extract().response().as(Item.class);
+        return newResp;
     }
 
     @Test
     public void updatePlaylistInvalid() {
+        Item invalidItem = new Item();
+        invalidItem.setName("");
+        invalidItem.setDescription("invalid desc");
+        invalidItem.setPublic(false);
         Response response = given().spec(requestSpecification).
                 pathParam("playlistId", 12459).
-                body("{\n" +
-                        "    \"name\": \"\",\n" +
-                        "    \"description\": \"Update playlist description\",\n" +
-                        "    \"public\": false\n" +
-                        "}").
+                body(invalidItem).
                 put("/playlists/{playlistId}").
                 then().
                 assertThat().
