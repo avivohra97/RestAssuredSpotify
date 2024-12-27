@@ -1,5 +1,7 @@
 package org.qe.spec;
 
+import io.restassured.RestAssured;
+import io.restassured.config.LogConfig;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
 import org.qe.Utils.Encode;
@@ -42,6 +44,8 @@ public class TokenManager {
         return response.statusCode();
     }
     private static Response refreshToken(Properties  prop){
+        LogConfig logConfig = LogConfig.logConfig().blacklistHeader("Authorization");
+        RestAssured.config = RestAssured.config().logConfig(logConfig);
         Response response = given().
                 baseUri("https://accounts.spotify.com/api/token").
                 contentType(ContentType.URLENC).
@@ -49,8 +53,8 @@ public class TokenManager {
                 formParam("refresh_token",prop.getProperty("refresh_token")).
                 formParam("client_id",prop.getProperty("client_id")).
                 header("Authorization","Basic "+ Encode.encode(prop.getProperty("client_id")+":"+prop.getProperty("client_secret"))).
-                when().log().all().
-                post().then().log().all().
+                when().
+                post().then().
                 extract().response();
 
         return response;

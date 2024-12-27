@@ -1,5 +1,6 @@
 package org.qe.Tests;
 
+import io.qameta.allure.*;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.builder.ResponseSpecBuilder;
 import io.restassured.filter.log.LogDetail;
@@ -22,15 +23,17 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Properties;
 
+import static io.qameta.allure.SeverityLevel.CRITICAL;
 import static io.restassured.RestAssured.*;
 
+
+@Epic("Spotify api usecases")
+@Feature("api features")
 public class PlaylistTest {
 
     RequestSpecification requestSpecification;
     ResponseSpecification responseSpecification;
     String access_token;
-//    String userId;
-//    String playListId;
     Response userPlaylist;
     Properties prop;
     String baseUri = "https://api.spotify.com/";
@@ -42,7 +45,8 @@ public class PlaylistTest {
         this.requestSpecification = SpecBuilder.reqSpec(baseUri,"v1",access_token);
         this.responseSpecification = SpecBuilder.resSpec();
     }
-     @Test
+     @Test(description = "testng desc to get user details")
+     @Story("club cases")
     public void getUserDetails() throws IOException {
         Response response = given().spec(requestSpecification).
                 get("/me").then().spec(responseSpecification).
@@ -52,6 +56,7 @@ public class PlaylistTest {
         PropertyBuilder.updateProperty(filePath);
         System.out.println(userId+" : is the user id");
     }
+    @Description("allure desc for get user playlists")
     @Test(dependsOnMethods = "getUserDetails")
     public void getUserPlaylists() throws IOException {
         userPlaylist = given().spec(requestSpecification).
@@ -89,6 +94,14 @@ public class PlaylistTest {
     }
 
     @Test(dependsOnMethods = {"getUserPlaylists","getUserDetails"})
+    @Description("This test attempts to log into the website using a login and a password. Fails if any error happens.\n\nNote that this test does not test 2-Factor Authentication.")
+    @Severity(CRITICAL)
+    @Owner("John Doe")
+    @Link(name = "Website", url = "https://dev.example.com/")
+    @Issue("AUTH-123")
+    @TmsLink("TMS-456")
+    @Story("club cases")
+    @Step
     public void updatePlaylist(){
 
         Item existingRecord = userPlaylistRecordSingle(prop.getProperty("playListId"));
@@ -129,6 +142,7 @@ public class PlaylistTest {
        return newResp;
     }
 
+    @Step
     public Item userPlaylistRecordSingle(String id){
         Item newResp;
         newResp = given().spec(requestSpecification).
